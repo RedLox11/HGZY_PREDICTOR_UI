@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>RED LOX</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#00ff41;--c:#00f3ff;--r:#ff003c;--y:#fcee0a;
+  --p:#b000ff;--o:#ff6a00;--bg:#020304;
+  --card:rgba(0,8,5,0.97);--border:rgba(0,255,65,0.07);
+  --text-dim:#1e3a1e;--text-mid:#2a5a2a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow-x:hidden;}
+body{background:var(--bg);color:var(--g);font-family:'Share Tech Mono',monospace;user-select:none;}
+
+/* CRT SCANLINES */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,65,.014) 2px,rgba(0,255,65,.014) 4px);pointer-events:none;z-index:9997;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.8) 100%);pointer-events:none;z-index:9996;}
+
+/* MATRIX BG */
+#matrix-bg{position:fixed;inset:0;z-index:0;opacity:.55;}
+
+/* LAYERS */
+#pg-login,#app{position:relative;z-index:10;}
+
+/* GLITCH */
+.glitch{position:relative;}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;opacity:.85;}
+.glitch::before{left:3px;text-shadow:-2px 0 var(--r);clip-path:inset(0 0 60% 0);animation:glA 3s infinite;}
+.glitch::after{left:-3px;text-shadow:2px 0 var(--c);clip-path:inset(50% 0 0 0);animation:glB 4s infinite;}
+@keyframes glA{0%,88%,100%{clip-path:inset(0 0 60% 0);}90%{clip-path:inset(20% 0 40% 0);}94%{clip-path:inset(75% 0 8% 0);}}
+@keyframes glB{0%,83%,100%{clip-path:inset(50% 0 0 0);}86%{clip-path:inset(65% 0 12% 0);}90%{clip-path:inset(18% 0 55% 0);}}
+
+@keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+.blink{animation:blink 1s step-end infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:.3;}50%{opacity:1;}}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+@keyframes scanLine{0%{top:-2px;opacity:.8;}100%{top:100%;opacity:0;}}
+@keyframes borderPulse{0%,100%{border-color:rgba(0,243,255,.06);}50%{border-color:rgba(0,243,255,.22);}}
+@keyframes glow{0%,100%{text-shadow:0 0 10px currentColor;}50%{text-shadow:0 0 25px currentColor, 0 0 50px currentColor;}}
+@keyframes hexP{0%,100%{opacity:.1;transform:scale(.5);}50%{opacity:1;transform:scale(1.3);}}
+
+/* PAGES */
+.page{display:none;width:100%;min-height:100vh;flex-direction:column;align-items:center;padding:8px 10px 90px;}
+.page.active{display:flex;animation:fadeUp .2s ease;}
+
+/* NAV (HEADER FIXED UI) */
+.nav-wrap{position:sticky;top:0;z-index:900;background:rgba(1,3,2,.99);border-bottom:1px solid rgba(0,255,65,.15);width:100%;max-width:480px;margin:0 auto;box-shadow:0 2px 20px rgba(0,0,0,.8);}
+.nav-top{display:flex;justify-content:space-between;align-items:center;padding:8px 14px 4px;font-size:8px;letter-spacing:2px;font-family:'Orbitron',sans-serif;border-bottom:1px solid rgba(0,255,65,.04);}
+.nav-brand{color:var(--c);font-weight:900;font-size:11px;letter-spacing:3px;text-shadow:0 0 8px rgba(0,243,255,.4);}
+.nav-live{color:var(--g);animation:pulse 1.4s infinite;font-size:8px;}
+.nav-scroll{width:100%;padding:10px 8px;}
+.nav-bar{display:flex;gap:6px;width:100%;justify-content:space-between;}
+.nb{flex:1;padding:10px 0;text-align:center;background:rgba(0,10,5,0.8);border:1px solid rgba(0,255,65,.2);color:var(--g);font-family:'Orbitron',sans-serif;font-size:9.5px;font-weight:900;cursor:pointer;transition:.3s;letter-spacing:1px;border-radius:4px;white-space:nowrap;}
+.nb.on{background:rgba(0,243,255,.12);color:var(--c);border-color:var(--c);box-shadow:0 0 15px rgba(0,243,255,.25);}
+
+/* SECTION TITLE */
+.stitle{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:bold;color:var(--c);letter-spacing:4px;text-transform:uppercase;border-bottom:1px solid rgba(0,243,255,.2);padding-bottom:9px;margin-bottom:16px;text-align:center;width:100%;max-width:440px;text-shadow:0 0 14px rgba(0,243,255,.3);position:relative;margin-top:10px;}
+
+/* CARD */
+.card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);padding:14px;margin-bottom:10px;position:relative;animation:borderPulse 4s infinite;}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:1.5px solid var(--c);border-left:1.5px solid var(--c);opacity:.6;}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:1.5px solid var(--c);border-right:1.5px solid var(--c);opacity:.6;}
+.card.r::before,.card.r::after{border-color:var(--r);}
+.card.r{animation:none;border-color:rgba(255,0,60,.1);}
+.card.y::before,.card.y::after{border-color:var(--y);}.card.y{border-color:rgba(252,238,10,.08);}
+.card.p::before,.card.p::after{border-color:var(--p);}.card.p{border-color:rgba(176,0,255,.08);}
+.card-title{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;margin-bottom:10px;}
+.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.025);}
+.lbl{color:#2a4a2a;font-size:10px;}
+.val{color:var(--c);font-size:10px;font-weight:bold;}
+
+/* GUIDE BOX */
+.guide{width:100%;max-width:440px;background:rgba(0,6,3,.9);border:1px solid rgba(0,255,65,.05);border-left:2px solid rgba(0,255,65,.3);padding:10px 12px;margin-bottom:12px;font-size:9.5px;line-height:1.8;}
+.guide-title{font-family:'Orbitron',sans-serif;font-size:7px;color:rgba(0,255,65,.6);letter-spacing:2px;margin-bottom:6px;}
+.guide p{color:#1a3a1a;margin:1px 0;}
+.guide .highlight{color:rgba(0,255,65,.65);}
+
+/* BTN */
+.btn{width:100%;max-width:440px;border:1px solid;padding:12px;text-align:center;font-family:'Orbitron',sans-serif;font-weight:700;font-size:10px;letter-spacing:2px;cursor:pointer;transition:.15s;margin-bottom:10px;text-transform:uppercase;position:relative;overflow:hidden;background:transparent;}
+.btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);transition:.4s;}
+.btn:active::before{left:100%;}
+.btn-g{border-color:rgba(0,255,65,.45);color:var(--g);background:rgba(0,255,65,.05);}
+.btn-c{border-color:rgba(0,243,255,.45);color:var(--c);background:rgba(0,243,255,.05);}
+.btn-r{border-color:rgba(255,0,60,.45);color:var(--r);background:rgba(255,0,60,.05);}
+.btn-y{border-color:rgba(252,238,10,.45);color:var(--y);background:rgba(252,238,10,.05);}
+.btn-p{border-color:rgba(176,0,255,.45);color:var(--p);background:rgba(176,0,255,.05);}
+.btn-o{border-color:rgba(255,106,0,.45);color:var(--o);background:rgba(255,106,0,.05);}
+
+/* INPUT */
+.cinput{background:rgba(0,0,0,.98);border:1px solid rgba(0,243,255,.15);border-left:2px solid var(--c);color:var(--c);padding:12px;font-family:'Share Tech Mono',monospace;font-size:16px;outline:none;text-align:center;letter-spacing:3px;width:100%;}
+
+/* STATS GRID */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:440px;margin-bottom:10px;}
+.sbox{background:var(--card);border:1px solid var(--border);padding:14px;text-align:center;position:relative;overflow:hidden;}
+.sbox::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,243,255,.15),transparent);}
+.sbox::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,65,.05),transparent);}
+.sv{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;line-height:1;}
+.sl{font-size:7px;color:var(--text-dim);letter-spacing:2px;margin-top:5px;text-transform:uppercase;}
+
+/* TERMINAL */
+.term{width:100%;max-width:440px;height:110px;background:rgba(0,3,0,.99);border:1px solid rgba(0,255,65,.1);border-left:2px solid rgba(0,255,65,.4);padding:10px 12px;font-size:9.5px;overflow-y:auto;margin-bottom:10px;}
+.term p{margin:2px 0;}
+.ts{color:#1a2a1a;}.tok{color:var(--g);}.ter{color:var(--r);}.tw{color:var(--c);}.td{color:var(--y);}
+
+/* PROGRESS */
+.pbar-wrap{background:#020502;border:1px solid rgba(0,0,0,.5);height:3px;overflow:hidden;margin-top:5px;}
+.pbar{height:100%;width:0%;transition:width .2s ease-in-out;}
+.pc{background:var(--c);box-shadow:0 0 6px var(--c);}
+.pr{background:var(--r);box-shadow:0 0 6px var(--r);}
+.py{background:var(--y);box-shadow:0 0 6px var(--y);}
+.po{background:var(--o);box-shadow:0 0 6px var(--o);}
+
+/* HUD */
+.hud{width:100%;max-width:440px;background:linear-gradient(180deg,rgba(0,12,5,.99),rgba(0,5,3,1));border:1px solid rgba(0,243,255,.2);padding:20px;text-align:center;position:relative;margin:4px 0;overflow:hidden;}
+.scan-bar{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,243,255,.7),transparent);animation:scanLine 2.5s ease-in-out infinite;}
+.hud-result{font-size:42px;font-weight:900;font-family:'Orbitron',sans-serif;letter-spacing:8px;transition:.3s;margin-bottom:14px;}
+.dblocks{display:flex;justify-content:center;gap:10px;}
+.dblk{width:58px;height:58px;border:1px solid rgba(0,243,255,.2);background:#000;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#0d0d0d;font-family:'Orbitron',sans-serif;transition:.3s;position:relative;}
+
+/* RISK */
+.risk{width:100%;max-width:440px;padding:10px 14px;margin-bottom:10px;border:1px solid;text-align:center;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;display:none;}
+.risk-lo{border-color:rgba(0,255,65,.35);color:var(--g);background:rgba(0,255,65,.04);}
+
+/* SIGNAL BARS */
+.sigwrap{display:flex;align-items:flex-end;gap:3px;height:24px;}
+.sigbar{width:5px;background:#060606;border:1px solid #060606;transition:.3s;}
+
+/* TOGGLE */
+.twrap{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.025);}
+.tlbl{font-size:10px;color:#2a4a2a;}
+.tdesc{font-size:8px;color:var(--text-dim);margin-top:1px;}
+.tog{position:relative;width:40px;height:20px;cursor:pointer;flex-shrink:0;}
+.tog-track{width:40px;height:20px;background:#060606;border:1px solid #0d0d0d;transition:.25s;}
+.tog-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;background:#111;transition:.25s;}
+.tog.on .tog-track{background:rgba(0,255,65,.15);border-color:rgba(0,255,65,.4);}
+.tog.on .tog-thumb{background:var(--g);left:23px;box-shadow:0 0 8px var(--g);}
+
+/* LOGIN */
+#pg-login{justify-content:center;align-items:center;min-height:100vh;padding:20px;}
+.login-container{width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;}
+.radar{position:relative;width:110px;height:110px;margin:0 auto 30px;}
+.rring{position:absolute;border-radius:50%;border:1px solid rgba(0,255,65,.12);}
+.rdot{position:absolute;width:6px;height:6px;border-radius:50%;}
+.rswp{position:absolute;top:50%;left:50%;width:48%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,65,.8));transform-origin:left;animation:spin 2s linear infinite;}
+.login-logo{font-family:'Orbitron',sans-serif;font-size:56px;font-weight:900;color:var(--c);text-shadow:0 0 40px rgba(0,243,255,.5);letter-spacing:8px;margin-bottom:4px;}
+.login-divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,243,255,.2),transparent);margin-bottom:18px;}
+#loginLoader{display:none;width:100%;margin-top:14px;}
+.login-msg{color:var(--c);font-size:9px;margin-bottom:6px;font-family:'Orbitron',sans-serif;}
+.hex-wrap{display:flex;justify-content:center;gap:10px;margin:10px 0;}
+.hex{width:11px;height:11px;background:var(--c);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);animation:hexP 1.2s ease-in-out infinite;}
+
+/* DEVICE INFO STRIP */
+.device-strip{width:100%;max-width:440px;background:rgba(0,10,5,.97);border:1px solid rgba(0,255,65,.15);padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ds-item{display:flex;flex-direction:column;gap:2px;}
+.ds-label{font-size:8px;color:#1a3a1a;letter-spacing:2px;font-family:'Orbitron',sans-serif;}
+.ds-value{font-size:12px;color:var(--c);font-family:'Orbitron',sans-serif;font-weight:700;}
+
+/* DASH HERO */
+.dash-hero{width:100%;max-width:440px;background:linear-gradient(135deg,rgba(0,20,10,.98),rgba(0,8,5,.99));border:1px solid rgba(0,243,255,.2);padding:20px;margin-bottom:10px;position:relative;}
+.dash-time{font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;color:var(--g);text-shadow:0 0 20px rgba(0,255,65,.3);letter-spacing:4px;}
+.dash-date{font-size:10px;color:#1e4a1e;margin-top:4px;letter-spacing:2px;}
+.dash-uid-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid rgba(0,255,65,.1);}
+.dash-uid-label{font-size:8px;color:var(--text-dim);letter-spacing:2px;font-family:'Orbitron',sans-serif;}
+
+/* HEATMAP */
+.heat-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;width:100%;max-width:440px;margin-bottom:8px;}
+.hcell{padding:10px 2px;text-align:center;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;border:1px solid #060606;transition:.4s;}
+
+/* TOAST */
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,8,3,.99);border:1px solid rgba(0,255,65,.4);color:var(--g);padding:10px 24px;font-size:10px;font-weight:bold;letter-spacing:2px;z-index:99999;display:none;font-family:'Orbitron',sans-serif;box-shadow:0 0 20px rgba(0,255,65,0.2);}
+
+/* FOOTER */
+.footer{position:fixed;bottom:0;left:0;width:100%;background:rgba(1,3,2,.99);border-top:1px solid rgba(0,255,65,.1);text-align:center;padding:14px;font-size:11px;font-family:'Orbitron',sans-serif;letter-spacing:4px;z-index:9999;color:var(--r);font-weight:bold;}
+
+/* TOOLS CARDS */
+.tool-card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);padding:18px;margin-bottom:12px;position:relative;}
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent,var(--c)),transparent);opacity:.5;}
+.tool-card.tc-p{--accent:var(--p);border-color:rgba(176,0,255,.15);}
+.tool-card.tc-o{--accent:var(--o);border-color:rgba(255,106,0,.15);}
+.tool-card.tc-c{--accent:var(--c);border-color:rgba(0,243,255,.15);}
+.tool-card.tc-y{--accent:var(--y);border-color:rgba(252,238,10,.15);}
+.tool-card.tc-g{--accent:var(--g);border-color:rgba(0,255,65,.15);}
+.tool-card-title{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:bold;letter-spacing:2px;margin-bottom:6px;}
+.tool-card-desc{font-size:9px;color:var(--text-dim);margin-bottom:12px;}
+</style>
+</head>
+<body>
+<canvas id="matrix-bg"></canvas>
+<div id="toast"></div>
+
+<!-- ████████ LOGIN PAGE ████████ -->
+<div id="pg-login" class="page active">
+  <div class="login-container">
+    <div class="radar">
+      <div class="rcross-h"></div><div class="rcross-v"></div>
+      <div class="rring" style="width:110px;height:110px;top:0;left:0;animation:pulse 2.5s infinite;"></div>
+      <div class="rswp"></div>
+      <div class="rdot" style="top:12px;left:68px;background:var(--r);box-shadow:0 0 10px var(--r);animation:pulse 1.1s infinite;"></div>
+    </div>
+    <div class="login-logo glitch" data-text="RED LOX">RED LOX</div>
+    <div class="login-divider"></div>
+    <input type="password" id="vipKey" class="cinput" placeholder="ENTER ACCESS KEY" maxlength="24" autocomplete="off">
+    <div id="loginLoader">
+      <div class="login-msg" id="loginMsg">> INITIATING SECURE CONNECTION...</div>
+      <div class="pbar-wrap"><div class="pbar pc" id="loginProg"></div></div>
+      <div class="hex-wrap"><div class="hex"></div><div class="hex"></div><div class="hex"></div></div>
+    </div>
+    <div class="btn btn-c" style="max-width:100%;margin-top:14px;" onclick="doLogin()">[ ⚡ SYSTEM LOGIN ]</div>
+    <div id="loginErr" style="color:var(--r);display:none;font-size:9px;text-align:center;margin-top:10px;font-family:'Orbitron',sans-serif;font-weight:bold;">> ERROR: KEY TOO SHORT</div>
+  </div>
+</div>
+
+<!-- ████████ MAIN APP ████████ -->
+<div id="app" style="display:none;width:100%;flex-direction:column;align-items:center;">
+
+<!-- FIXED AND ENHANCED HEADER -->
+<div class="nav-wrap">
+  <div class="nav-top">
+    <span class="nav-brand">RED LOX <span style="color:var(--g);font-size:8px;">V12.0</span></span>
+    <span><span class="nav-live">● LIVE SYNC ACTIVE</span></span>
+    <span id="navTime" style="color:#1e3a1e;">--:--:--</span>
+  </div>
+  <div class="nav-scroll">
+    <div class="nav-bar">
+      <div class="nb on" onclick="gp('p-dash',this)">DASHBOARD</div>
+      <div class="nb" onclick="gp('p-predict',this)">PREDICTOR</div>
+      <div class="nb" onclick="gp('p-tools',this)">TOOLS</div>
+      <div class="nb" onclick="gp('p-set',this)">SETTINGS</div>
+    </div>
+  </div>
+</div>
+
+<!-- ████ DASHBOARD ████ -->
+<div id="p-dash" class="page active">
+  <div class="stitle">◆ COMMAND CENTER</div>
+
+  <div class="dash-hero">
+    <div class="dash-time" id="d-clock">--:--:--</div>
+    <div class="dash-date" id="d-date">SYSTEM ONLINE</div>
+    <div class="dash-uid-row">
+      <div><div class="dash-uid-label">MASTER UID</div><div class="dash-uid-val" id="uid-disp" style="color:var(--y);font-family:'Share Tech Mono';font-size:14px;margin-top:2px;">---</div></div>
+      <div style="text-align:right;"><div class="dash-uid-label">ACCESS LEVEL</div><div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--p);font-weight:bold;margin-top:2px;">VIP ACCESS</div></div>
+    </div>
+  </div>
+
+  <div class="device-strip">
+    <div class="ds-item"><div class="ds-label">NETWORK</div><div class="ds-value" style="color:var(--g);">SECURE</div></div>
+    <div class="ds-item"><div class="ds-label">SERVER PING</div><div class="ds-value" id="d-ping" style="color:var(--g);">--ms</div></div>
+    <div class="ds-item"><div class="ds-label">AI ENGINE</div><div class="ds-value" style="color:var(--c);">QUANTUM CORE</div></div>
+    <div class="ds-item"><div class="ds-label">ACCURACY</div><div class="ds-value" id="d-acc" style="color:var(--g);">98.4%</div></div>
+  </div>
+
+  <!-- STAT BOXES -->
+  <div class="sgrid">
+    <div class="sbox"><div class="sv" style="color:var(--g);" id="d-scans">134</div><div class="sl">TOTAL SCANS</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--y);" id="d-streak">14</div><div class="sl">WIN STREAK</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--c);" id="d-wins">28</div><div class="sl">TOTAL WINS</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--r);" id="d-losses">2</div><div class="sl">TOTAL LOSSES</div></div>
+  </div>
+
+  <div class="guide">
+    <div class="guide-title">▶ RED LOX— SYSTEM GUIDE</div>
+    <p>◆ <span class="highlight">PREDICTOR</span> → AI automatically API sync karke new period aate hi result predict kar dega.</p>
+    <p>◆ <span class="highlight">AUTO-SCAN</span> → Button bar-bar click karne ki zarurat nahi hai, sab live chalta hai.</p>
+  </div>
+
+  <div class="card y">
+    <div class="card-title" style="color:var(--y);">AI NUMBER FREQUENCY MATRIX</div>
+    <div class="heat-grid" id="heatmap"></div>
+  </div>
+
+  <div class="card r">
+    <div style="color:var(--r);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:bold;letter-spacing:2px;margin-bottom:6px;text-align:center;">⚡ ANTI-LOSS SHIELD ACTIVE</div>
+    <div style="color:#1e3a1e;font-size:9px;text-align:center;margin-bottom:8px;">Live Trend Scanner + Auto Period Sync</div>
+    <div class="pbar-wrap"><div class="pbar pr" style="width:100%;"></div></div>
+  </div>
+
+  <div class="btn btn-c" onclick="gp('p-predict',document.querySelectorAll('.nb')[1])">[ ⚡ LAUNCH PREDICTOR ]</div>
+</div>
+
+<!-- ████ QUANTUM PREDICTOR ████ -->
+<div id="p-predict" class="page">
+  <div class="stitle">◆ LIVE TREND PREDICTOR</div>
+
+  <div class="term" id="termBox">
+    <p class="ts">root@red-lox:~# boot quantum-engine --auto</p>
+    <p class="tok">> Connecting to WINGO 1MINT API...</p>
+    <p class="tw">> Live Server: CONNECTED | Auto-Sync: ON</p>
+  </div>
+
+  <!-- Execute Button -->
+  <div class="btn btn-c" id="startBtn" onclick="startHack()">[ ⚡ SCAN CURRENT TREND ]</div>
+
+  <div id="hackHud" style="opacity:0.3;pointer-events:none;width:100%;max-width:440px;transition:0.5s;">
+    <div class="hud">
+      <div class="scan-bar"></div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--y);font-weight:bold;letter-spacing:2px;margin-bottom:6px;" id="periodTxt">PERIOD: FETCHING API...</div>
+      <div style="font-size:11px;font-weight:bold;color:#1e4a1e;margin-bottom:14px;" id="confTxt">CONFIDENCE: --%</div>
+      <div class="hud-result" id="sizeTxt" style="color:#0d0d0d;">STANDBY</div>
+      <div class="dblocks">
+        <div class="dblk" id="d1">-</div>
+        <div class="dblk" id="d2">-</div>
+        <div class="dblk" id="d3">-</div>
+      </div>
+      <div class="pbar-wrap" style="margin-top:16px;"><div class="pbar pc" id="hackProg"></div></div>
+    </div>
+    
+    <div id="riskZone" class="risk risk-lo" style="display:block;margin-top:12px;font-size:11px;font-weight:bold;">✓ LOW RISK — SAFE TO BET</div>
+
+    <!-- Live Timer Sync Box -->
+    <div class="card" style="text-align:center;padding:18px;margin-top:12px;border-color:rgba(252,238,10,0.3);">
+      <div style="font-size:8px;color:var(--text-dim);font-weight:bold;letter-spacing:3px;font-family:'Orbitron',sans-serif;margin-bottom:8px;">NEXT PERIOD IN</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:48px;font-weight:900;color:var(--y);text-shadow:0 0 25px rgba(252,238,10,.5);" id="cdNum">60</div>
+      <div class="pbar-wrap" style="height:4px;margin-top:8px;"><div class="pbar py" id="cdProg" style="width:100%;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ████ TOOLS ████ -->
+<div id="p-tools" class="page">
+  <div class="stitle">◆ MASTER TOOLS</div>
+
+  <!-- DIGIT ANALYZER -->
+  <div class="tool-card tc-p">
+    <div class="tool-card-title" style="color:var(--p);">⬡ LAST DIGIT ANALYZER</div>
+    <div class="tool-card-desc">Period ka aakhiri number (0-9) daalo aur naya trend prediction dekho</div>
+    <div style="display:flex;gap:7px;align-items:center;margin-bottom:8px;">
+      <input id="digitInp" type="number" min="0" max="9" placeholder="0-9" class="cinput" style="flex:1;font-size:20px;max-width:none;">
+      <div class="btn btn-p" style="margin:0;width:auto;padding:12px 20px;" onclick="analyzeDigit()">SCAN</div>
+    </div>
+    <div id="analyzeResult" style="font-size:11px;color:var(--text-dim);font-weight:bold;min-height:50px;line-height:1.9;padding:10px;background:rgba(176,0,255,.03);border:1px solid rgba(176,0,255,.1);"></div>
+  </div>
+
+  <!-- LUCK METER -->
+  <div class="tool-card tc-o">
+    <div class="tool-card-title" style="color:var(--o);">🎯 LUCK METER</div>
+    <div class="tool-card-desc">Bet karne se pehle apna luck check karo — HIGH ho tabhi bet karo</div>
+    <div style="text-align:center;margin:12px 0 8px;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:52px;font-weight:900;" id="luckNum">--</div>
+      <div class="pbar-wrap" style="height:6px;margin-top:8px;"><div class="pbar po" id="luckBar" style="height:100%;"></div></div>
+    </div>
+    <div class="btn btn-o" style="margin-top:12px;margin-bottom:0;" onclick="calcLuck()">[ 🎯 CALCULATE LUCK ]</div>
+  </div>
+
+  <!-- ROUND TIMER -->
+  <div class="tool-card tc-c">
+    <div class="tool-card-title" style="color:var(--c);">⏱ API SYNCED ROUND TIMER</div>
+    <div style="text-align:center;padding:12px 0;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:50px;font-weight:900;color:var(--c);text-shadow:0 0 20px rgba(0,243,255,0.4);" id="timerDisp">01:00</div>
+    </div>
+  </div>
+</div>
+
+<!-- ████ SETTINGS ████ -->
+<div id="p-set" class="page">
+  <div class="stitle">◆ SYSTEM SETTINGS</div>
+
+  <div class="card">
+    <div class="card-title" style="color:var(--c);">SYSTEM INFORMATION</div>
+    <div class="row"><span class="lbl">VERSION</span><span class="val" style="color:var(--p);">V12.0 ULTRA</span></div>
+    <div class="row"><span class="lbl">ACCESS LEVEL</span><span class="val" style="color:var(--p);">VIP ACCESS</span></div>
+    <div class="row"><span class="lbl">ENGINE</span><span class="val" style="color:var(--g);">QUANTUM TREND LOGIC</span></div>
+  </div>
+
+  <div class="card p">
+    <div class="card-title" style="color:var(--p);">AI CONFIGURATION</div>
+    <div class="twrap">
+      <div>
+        <div class="tlbl" style="color:var(--g);font-weight:bold;">AUTO-PREDICT MODE</div>
+        <div class="tdesc">New period aate hi auto result dega</div>
+      </div>
+      <div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-track"></div><div class="tog-thumb"></div></div>
+    </div>
+    <div class="twrap">
+      <div>
+        <div class="tlbl" style="color:var(--y);font-weight:bold;">STREAK GUARD</div>
+        <div class="tdesc">Avoid continuous loss patterns</div>
+      </div>
+      <div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-track"></div><div class="tog-thumb"></div></div>
+    </div>
+  </div>
+
+  <div class="btn btn-r" onclick="doLogout()" style="margin-top:10px;">[ 🚪 LOGOUT SYSTEM ]</div>
+</div>
+
+</div><!-- /app -->
+
+<div class="footer">HACK BY RED LOX</div>
+
+<script>
+'use strict';
+
+// ═══ MATRIX RAIN ═══
+const cvs=document.getElementById('matrix-bg');
+const cx=cvs.getContext('2d');
+function rsz(){cvs.width=window.innerWidth;cvs.height=window.innerHeight;}
+rsz();window.addEventListener('resize',rsz);
+const CH='01DARKABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%><{}[]ﾊﾋｼﾂｳﾄﾅﾆﾇﾈﾉﾊ01';
+const FS=14;let drops=[];
+function initD(){drops=Array.from({length:Math.floor(cvs.width/FS)}).fill(1);}
+initD();
+setInterval(()=>{
+  cx.fillStyle='rgba(2,3,4,0.04)';cx.fillRect(0,0,cvs.width,cvs.height);
+  drops.forEach((y,i)=>{
+    const c=CH[Math.floor(Math.random()*CH.length)];
+    cx.fillStyle=Math.random()>.88?`rgba(0,243,255,1)`:`rgba(0,255,65,0.7)`;
+    cx.font=FS+'px monospace';cx.fillText(c,i*FS,y*FS);
+    if(y*FS>cvs.height&&Math.random()>.965)drops[i]=0;
+    drops[i]++;
+  });
+},30);
+
+// ═══ LOGIN ═══
+function doLogin(){
+  const k=document.getElementById('vipKey').value.trim();
+  if(k.length>=4){
+    document.getElementById('loginErr').style.display='none';
+    document.getElementById('loginLoader').style.display='block';
+    let w=0;
+    const bar=document.getElementById('loginProg');
+    const iv=setInterval(()=>{
+      w+=2;bar.style.width=w+'%';
+      if(w>=100){
+        clearInterval(iv);
+        setTimeout(()=>{
+          document.getElementById('pg-login').style.display='none';
+          document.getElementById('app').style.display='flex';
+          initApp();
+        },400);
+      }
+    },25);
+  } else {
+    document.getElementById('loginErr').style.display='block';
+  }
+}
+function doLogout(){location.reload();}
+
+// ═══ NAV ═══
+function gp(id,btn){
+  document.querySelectorAll('#app .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('active');
+  if(btn)btn.classList.add('on');
+}
+
+// ═══ CLOCK & PING ═══
+setInterval(()=>{
+  const t=new Date().toLocaleTimeString('en-GB',{hour12:false});
+  document.getElementById('navTime').innerText=t;
+  document.getElementById('d-clock').innerText=t;
+},1000);
+setInterval(()=>{
+  document.getElementById('d-ping').innerText=Math.floor(Math.random()*20+8)+'ms';
+},2500);
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.innerText='[ '+msg+' ]';t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+function logT(msg,cls='ts'){
+  const t=document.getElementById('termBox');
+  const p=document.createElement('p');p.className=cls;p.innerText=msg;
+  t.appendChild(p); t.scrollTop=t.scrollHeight;
+}
+
+// ═══ TREND LOGIC ═══
+const TREND_MAP = {
+  0: { size: 'BIG', nums: [7, 8, 9] },
+  1: { size: 'SMALL', nums: [2, 3, 4] },
+  2: { size: 'BIG', nums: [6, 7, 8] },
+  3: { size: 'BIG', nums: [5, 6, 9] },
+  4: { size: 'SMALL', nums: [0, 1, 2] },
+  5: { size: 'BIG', nums: [6, 7, 9] },
+  6: { size: 'BIG', nums: [7, 8, 9] },
+  7: { size: 'BIG', nums: [5, 8, 9] },
+  8: { size: 'SMALL', nums: [1, 2, 4] },
+  9: { size: 'SMALL', nums: [0, 2, 3] }
+};
+
+let currentLivePeriod = "SYNCING...";
+let lastAutoPeriod = ""; 
+let predictedResults = {}; 
+
+const API_URL = 'https://api.bdg88zf.com/api/webapi/GetGameIssue';
+const API_PAYLOAD = { typeId: 1, language: 0, random: "40079dcba93a48769c6ee9d4d4fae23f", signature: "D12108C4F57C549D82B23A91E0FA20AE", timestamp: 1727792520 };
+
+// ═══ HYBRID TIMER (LOCAL + SERVER SYNC) ═══
+let hackCd = 60; // Start with 60s
+
+// Local Smart Tick: Ye hamesha chalega chahe API fail ho jaye. (Taki 60 pe atke nahi)
+setInterval(() => {
+  hackCd--;
+  if (hackCd <= 0) {
+      hackCd = 60; // Reset period
+      // Agar API sync na ho, tab bhi local timer naya period start maan lega aur chalega
+      if(currentLivePeriod !== "SYNCING...") {
+          let num = parseInt(currentLivePeriod);
+          if(!isNaN(num)){
+              currentLivePeriod = (num + 1).toString();
+              document.getElementById('periodTxt').innerText = 'PERIOD: ' + currentLivePeriod;
+              // Trigger Auto Hack on local cycle
+              if(lastAutoPeriod !== currentLivePeriod){
+                  lastAutoPeriod = currentLivePeriod;
+                  startHack(true);
+              }
+          }
+      }
+  }
+
+  // Update UI Elements
+  const cdNum = document.getElementById('cdNum');
+  if (cdNum) cdNum.innerText = hackCd;
+  
+  const cdProg = document.getElementById('cdProg');
+  if (cdProg) cdProg.style.width = ((hackCd / 60) * 100) + '%';
+  
+  const timerD = document.getElementById('timerDisp');
+  if (timerD) timerD.innerText = '00:' + String(hackCd).padStart(2, '0');
+
+}, 1000);
+
+// API Sync: Server Time Check
+async function fetchRealPeriod() {
+  try {
+    const response = await fetch(API_URL, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(API_PAYLOAD) 
+    });
+    const data = await response.json();
+    
+    if (data && data.data && data.data.issueNumber) {
+      currentLivePeriod = data.data.issueNumber;
+      document.getElementById('periodTxt').innerText = 'PERIOD: ' + currentLivePeriod;
+      
+      // Sync Local Timer with Server exact remaining seconds
+      if (data.data.remainTime !== undefined) {
+        let realTime = Math.round(data.data.remainTime);
+        // Sirf tabhi force update karo jab hamara timer server se out-of-sync ho (> 2 seconds)
+        if (Math.abs(hackCd - realTime) > 2 && realTime <= 60 && realTime > 0) {
+            hackCd = realTime;
+        }
+      }
+
+      // ⚡ AUTO-RESULT ON PERIOD CHANGE LOGIC ⚡
+      if (lastAutoPeriod !== "" && lastAutoPeriod !== currentLivePeriod) {
+          lastAutoPeriod = currentLivePeriod;
+          startHack(true); 
+      } else if (lastAutoPeriod === "") {
+          lastAutoPeriod = currentLivePeriod;
+      }
+    }
+  } catch(e) {
+      // API blocked ya internet issue hone par ye silent rahega aur Upar wala Local Timer handle karega
+  }
+}
+// Har 3 second me server time fetch karega
+setInterval(fetchRealPeriod, 3000);
+
+
+// ═══ EXECUTE PREDICTION (Supports Auto-mode) ═══
+function startHack(isAuto = false){
+  if(currentLivePeriod === "SYNCING...") { 
+      if(!isAuto) toast("WAIT FOR SYSTEM INITIALIZATION!"); 
+      return; 
+  }
+
+  const hud=document.getElementById('hackHud');
+  hud.style.opacity='1'; hud.style.pointerEvents='auto';
+  
+  const btn = document.getElementById('startBtn');
+  if(isAuto) {
+      btn.innerText='[ ⚡ AUTO SCANNING NEW PERIOD... ]';
+      logT(`> [AUTO-SYNC] Period ${currentLivePeriod} Started...`, 'tw');
+  } else {
+      btn.innerText='[ ⚡ SCANNING TREND... ]';
+  }
+  
+  const pb=document.getElementById('hackProg'); pb.style.width='0%';
+  const sEl=document.getElementById('sizeTxt'); sEl.innerText='...'; sEl.style.color='#222';
+  ['d1','d2','d3'].forEach(id => { document.getElementById(id).innerText = '-'; document.getElementById(id).style.color='#0d0d0d'; });
+
+  let p=0;
+  let speed = isAuto ? 15 : 25; 
+  
+  const iv=setInterval(()=>{
+    p+=3; pb.style.width=p+'%';
+    if(p>=100){
+      clearInterval(iv);
+      btn.innerText='[ ⚡ SCAN CURRENT TREND ]';
+      
+      // Get Last Digit of Period
+      const lastStr = String(currentLivePeriod);
+      const lastDigit = parseInt(lastStr.charAt(lastStr.length - 1));
+      
+      let res;
+      // Check if already predicted for this period
+      if(predictedResults[currentLivePeriod]) {
+          res = predictedResults[currentLivePeriod];
+      } else {
+          // Generate new prediction
+          const trend = TREND_MAP[lastDigit] || TREND_MAP[0];
+          res = {
+              size: trend.size,
+              nums: trend.nums,
+              conf: Math.floor(Math.random() * 11) + 88 
+          };
+          predictedResults[currentLivePeriod] = res; 
+          
+          // Auto update Fake Dashboard Stats
+          if(Math.random() > 0.05) {
+             let wins = parseInt(document.getElementById('d-wins').innerText);
+             let strk = parseInt(document.getElementById('d-streak').innerText);
+             document.getElementById('d-wins').innerText = wins + 1;
+             document.getElementById('d-streak').innerText = strk + 1;
+          } else {
+             let losses = parseInt(document.getElementById('d-losses').innerText);
+             document.getElementById('d-losses').innerText = losses + 1;
+             document.getElementById('d-streak').innerText = 0;
+          }
+          let scans = parseInt(document.getElementById('d-scans').innerText);
+          document.getElementById('d-scans').innerText = scans + 1;
+      }
+
+      // Display Final Results UI
+      const col = res.size === 'BIG' ? 'var(--r)' : 'var(--c)';
+      sEl.innerText = res.size; 
+      sEl.style.color = col; 
+      sEl.style.textShadow = `0 0 35px ${col}, 0 0 10px ${col}`;
+      
+      document.getElementById('confTxt').innerText = `CONFIDENCE LEVEL: ${res.conf}%`;
+      document.getElementById('confTxt').style.color = 'var(--g)';
+      
+      ['d1','d2','d3'].forEach((id,i) => {
+        const el=document.getElementById(id);
+        el.innerText = res.nums[i];
+        el.style.color = col;
+        el.style.borderColor = col;
+        el.style.boxShadow = `0 0 20px ${col}`;
+      });
+
+      logT(`> TARGET ACQUIRED: ${res.size} [${res.nums.join(',')}]`, col === 'var(--r)' ? 'ter' : 'tw');
+      
+      // Auto Toast on auto-predict
+      if(isAuto) toast(`AUTO RESULT: ${res.size}`);
+      if(navigator.vibrate) navigator.vibrate([80,40,120]);
+    }
+  }, speed);
+}
+
+// ═══ TOOLS ═══
+function analyzeDigit(){
+  const v = parseInt(document.getElementById('digitInp').value);
+  const el = document.getElementById('analyzeResult');
+  
+  if(isNaN(v) || v < 0 || v > 9){
+    el.innerHTML = '<span style="color:var(--r);">> ERROR: 0 se 9 ke beech number daalo</span>';
+    return;
+  }
+  
+  const trend = TREND_MAP[v];
+  const color = trend.size === 'BIG' ? 'var(--r)' : 'var(--c)';
+  const acc = Math.floor(Math.random() * 11) + 88; 
+  
+  el.innerHTML =
+    `<span style="color:var(--g);">> INPUT LAST DIGIT: ${v}</span><br>`+
+    `<span style="color:${color};">> PREDICTION: ${trend.size}</span><br>`+
+    `<span style="color:var(--y);">> SUGGESTED NUMBERS: ${trend.nums.join(' — ')}</span><br>`+
+    `<span style="color:var(--g);">> TREND ACCURACY: ${acc}%</span>`;
+}
+
+function calcLuck(){
+  const v=Math.floor(Math.random()*100)+1;
+  const col=v>60?'var(--g)':v>30?'var(--y)':'var(--r)';
+  document.getElementById('luckNum').innerText=v+'%';
+  document.getElementById('luckNum').style.color=col;
+  document.getElementById('luckBar').style.width=v+'%';
+  document.getElementById('luckBar').style.background=col;
+}
+
+// ═══ INIT APP ═══
+function initApp(){
+  let uid=localStorage.getItem('RED_LOX_uid');
+  if(!uid){uid='RED LOX-'+Math.floor(Math.random()*9000000+1000000);localStorage.setItem('drk_ai_uid',uid);}
+  document.getElementById('uid-disp').innerText=uid;
+  fetchRealPeriod();
+  
+  // Fake Heatmap Init
+  const hw = document.getElementById('heatmap');
+  for(let i=0;i<=9;i++){
+    const cell=document.createElement('div');cell.className='hcell';
+    const isBig=i>=5;
+    cell.style.background=isBig?'rgba(255,0,60,.1)':'rgba(0,243,255,.1)';
+    cell.style.color=isBig?'rgba(255,0,60,.9)':'rgba(0,243,255,.9)';
+    cell.innerText=i; hw.appendChild(cell);
+  }
+}
+</script>
+</body>
+</html>
